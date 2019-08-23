@@ -12413,6 +12413,11 @@ sub format_data_type
 	my $q = "'";
 	$q = '"' if ($isnested);
 
+        # ajout pour migration eptica (@thibaut - 23/05/2019)
+        # Les données exportées d'Oracle contiennent la chaîne de caractère
+	# '\001\002' en lieu et place de NULL
+        $col = '' if ($col =~ /^\001\002$/);
+
 	# Skip data type formatting when it has already been done in
 	# set_custom_type_value(), aka when the data type is an array.
 	next if ($data_type =~ /\[\d*\]/); 
@@ -18429,8 +18434,9 @@ sub _escape_lob
 		if ( ($generic_type eq 'BLOB') || ($generic_type eq 'RAW') ) {
 			#$col = escape_bytea($col);
 			# RAW data type is returned in hex
-			$col = unpack("H*",$col) if ($generic_type ne 'RAW');
-			$col = '\\x' . $col;
+		        $col = unpack("H*",$col) if ($generic_type ne 'RAW');
+		        # revert commit 0331abd87c6596e6 for eptica migration
+			$col = '\\\\x' . $col;
 		} elsif (($generic_type eq 'CLOB') || $cond->{istext}) {
 			$col = $self->escape_copy($col, $isnested);
 		}
